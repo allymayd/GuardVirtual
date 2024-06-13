@@ -1,0 +1,135 @@
+package javaopencv;
+
+import java.awt.BorderLayout; // Import for layout management
+import java.awt.event.ActionEvent; // Import for action events
+import java.awt.event.ActionListener; // Import for action listener
+import java.awt.image.BufferedImage; // Import for handling image data
+import java.io.ByteArrayInputStream; // Import for byte array input stream
+import java.io.InputStream; // Import for input stream
+import javax.imageio.ImageIO; // Import for image IO
+import javax.swing.ImageIcon; // Import for image icons
+import javax.swing.JButton; // Import for buttons
+import javax.swing.JFrame; // Import for the main frame
+import org.opencv.core.Core; // Import for core OpenCV functionalities
+import org.opencv.core.CvType; // Import for OpenCV types
+import org.opencv.core.Mat; // Import for matrix operations
+import org.opencv.core.MatOfByte; // Import for matrix of bytes
+import org.opencv.highgui.Highgui; // Import for high-level GUI functionalities (deprecated in later versions)
+import org.opencv.highgui.VideoCapture; // Import for video capture
+import org.opencv.imgproc.Imgproc; // Import for image processing
+
+public final class Main {
+    static {
+        System.loadLibrary(Core.NATIVE_LIBRARY_NAME); // Load OpenCV native library
+    }
+
+    private JFrame window; // Main window frame
+    private JButton startButton, stopButton; // Buttons to start and stop video capture
+    private ImagePanel image; // Panel to display images
+
+    public Main() {
+        buildGUI(); // Build the GUI when the object is created
+    }
+
+    private void buildGUI() {
+        window = new JFrame("Test Webcam Panel"); // Create a new JFrame with a title
+
+        startButton = new JButton("Start"); // Initialize start button
+        stopButton = new JButton("Stop"); // Initialize stop button
+
+        window.add(startButton, BorderLayout.WEST); // Add start button to the left side of the window
+        window.add(stopButton, BorderLayout.EAST); // Add stop button to the right side of the window
+
+        image = new ImagePanel(new ImageIcon("figs/320x240.gif").getImage()); // Initialize image panel with a placeholder image
+        window.add(image, BorderLayout.CENTER); // Add image panel to the center of the window
+
+        window.setSize(449, 268); // Set the window size
+        window.setLocationRelativeTo(null); // Center the window on the screen
+        window.setVisible(true); // Make the window visible
+        window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // Set default close operation
+        window.setResizable(false); // Prevent window resizing
+
+        startButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                start(); // Call start method when the start button is clicked
+            }
+        });
+
+        stopButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                stop(); // Call stop method when the stop button is clicked
+            }
+        });
+    }
+
+    private Boolean begin = false; // Flag to indicate if video capture has started
+    private VideoCapture video = null; // VideoCapture object to handle video input
+    private CaptureThread thread = null; // Thread for capturing video
+
+    private void start() {
+        System.out.println("You clicked the start button!");
+
+        if (!begin) { // If video capture hasn't started
+            video = new VideoCapture(0); // Initialize VideoCapture with the default camera (0)
+
+            if (video.isOpened()) { // If the video source is opened successfully
+                thread = new CaptureThread(); // Create a new capture thread
+                thread.start(); // Start the capture thread
+                begin = true; // Set the begin flag to true
+            }
+        }
+    }
+
+    private MatOfByte matOfByte = new MatOfByte(); // Matrix of bytes to hold image data
+    private BufferedImage bufImage = null; // BufferedImage to hold the frame image
+    private InputStream in; // InputStream to read image data
+    private Mat frameaux = new Mat(); // Auxiliary frame for processing
+    private Mat frame = new Mat(240, 320, CvType.CV_8UC3); // Main frame with dimensions 240x320 and type CV_8UC3
+
+    class CaptureThread extends Thread {
+        @Override
+        public void run() {
+            if (video.isOpened()) { // If the video source is opened successfully
+                while (begin) { // While the video capture is running
+                    video.retrieve(frameaux); // Retrieve the frame from the video source
+                    Imgproc.resize(frameaux, frame, frame.size()); // Resize the frame to fit the display size
+
+                    Highgui.imencode(".jpg", frame, matOfByte); // Encode the frame to a JPG format
+                    byte[] byteArray = matOfByte.toArray(); // Convert the encoded frame to a byte array
+
+                    try {
+                        in = new ByteArrayInputStream(byteArray); // Create an InputStream from the byte array
+                        bufImage = ImageIO.read(in); // Read the image from the InputStream
+                    } catch (Exception ex) {
+                        ex.printStackTrace(); // Print stack trace in case of an exception
+                    }
+
+                    image.updateImage(bufImage); // Update the image panel with the new frame
+
+                    try {
+                        Thread.sleep(5); // Sleep for 5 milliseconds to control the frame rate
+                    } catch (Exception ex) {
+                        ex.printStackTrace(); // Print stack trace in case of an exception
+                    }
+                }
+            }
+        }
+    }
+
+    private void stop() {
+        System.out.println("You clicked the stop button!");
+        begin = false; // Set the begin flag to false to stop the video capture
+        try {
+            Thread.sleep(1000); // Sleep for 1 second to allow the capture thread to finish
+        } catch (Exception ex) {
+            ex.printStackTrace(); // Print stack trace in case of an exception
+        }
+        video.release(); // Release the video capture resource
+    }
+
+    public static void main(String[] args) {
+        new Main(); // Create a new instance of the Main class to start the application
+    }
+}

@@ -1,0 +1,47 @@
+package javaopencv;
+
+import java.awt.Color; // Import the Color class for setting the border color
+import java.awt.Dimension; // Import the Dimension class for setting panel size
+import java.awt.Graphics; // Import the Graphics class for custom painting
+import java.awt.Image; // Import the Image class for handling images
+import javax.swing.BorderFactory; // Import the BorderFactory class for creating borders
+import javax.swing.ImageIcon; // Import the ImageIcon class for handling image icons
+import javax.swing.JPanel; // Import the JPanel class for creating panels
+
+class ImagePanel extends JPanel {
+    private Image img; // Declare a private variable to hold the image
+
+    // Constructor that takes a file path to an image
+    public ImagePanel(String img) {
+        // Load the image from the file path and call the main constructor
+        this(new ImageIcon(img).getImage());
+    }
+
+    // Main constructor that takes an Image object
+    public ImagePanel(Image img) {
+        this.img = img; // Set the image
+        // Set the preferred size of the panel to match the image dimensions
+        Dimension size = new Dimension(img.getWidth(null), img.getHeight(null));
+        setPreferredSize(size); // Set preferred size
+        setMinimumSize(size); // Set minimum size
+        setMaximumSize(size); // Set maximum size
+        setSize(size); // Set the size
+        setLayout(null); // Disable layout management
+        // Set a black border around the panel
+        setBorder(BorderFactory.createLineBorder(Color.black));
+    }
+
+    // Method to update the image displayed in the panel
+    public void updateImage(Image img) {
+        this.img = img; // Set the new image
+        validate(); // Revalidate the component
+        repaint(); // Repaint the component
+    }
+
+    @Override
+    public void paintComponent(Graphics g) {
+        super.paintComponent(g); // Call the superclass's paintComponent method
+        // Draw the image at the top-left corner of the panel
+        g.drawImage(img, 0, 0, null);
+    }
+}
